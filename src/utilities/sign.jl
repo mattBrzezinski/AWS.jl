@@ -17,7 +17,6 @@ function sign_aws2!(aws::AbstractAWSConfig, request::Request, time::DateTime)
     end
 
     request.headers["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8"
-
     creds = check_credentials(credentials(aws))
     query["AWSAccessKeyId"] = creds.access_key_id
     query["Expires"] = Dates.format(time + Dates.Minute(2), dateformat"yyyy-mm-dd\THH:MM:SS\Z")
@@ -47,8 +46,8 @@ function sign_aws4!(aws::AbstractAWSConfig, request::Request, time::DateTime)
 
     # Authentication scope...
     authentication_scope = [date, region(aws), request.service, "aws4_request"]
-
     creds = check_credentials(credentials(aws))
+
     signing_key = "AWS4$(creds.secret_key)"
 
     for scope in authentication_scope

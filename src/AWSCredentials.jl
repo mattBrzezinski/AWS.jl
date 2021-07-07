@@ -150,7 +150,7 @@ function Base.show(io::IO, c::AWSCredentials)
         isempty(c.token) ? "" : ", $(c.token[1:3])...",
         ", ",
         c.expiry,
-        ")"
+        ")",
     )
 end
 
@@ -182,7 +182,10 @@ function check_credentials(aws_creds::AWSCredentials; force_refresh::Bool=false)
     if force_refresh || _will_expire(aws_creds)
         credential_method = aws_creds.renew
 
+        println("Credential renewal method; ", credential_method)
+
         if credential_method !== nothing
+            # TODO: What function are we calling here?
             new_aws_creds = credential_method()
 
             new_aws_creds === nothing && throw(NoCredentials("Can't find AWS credentials!"))
@@ -260,6 +263,7 @@ function ec2_instance_credentials(profile::AbstractString)
     name = ec2_instance_metadata("/latest/meta-data/iam/security-credentials/")
     creds = ec2_instance_metadata("/latest/meta-data/iam/security-credentials/$name")
     parsed = JSON.parse(creds)
+
     instance_profile_creds = AWSCredentials(
         parsed["AccessKeyId"],
         parsed["SecretAccessKey"],
@@ -281,11 +285,13 @@ function ec2_instance_credentials(profile::AbstractString)
             "-" * Dates.format(@mock(now(UTC)), dateformat"yyyymmdd\THHMMSS\Z"),
         )
     end
+
     params = Dict{String, Any}("RoleArn" => role_arn, "RoleSessionName" => role_session)
     duration = _get_ini_value(ini, profile, "duration_seconds")
     if duration !== nothing
         params["DurationSeconds"] = parse(Int, duration)
     end
+
     resp = AWSServices.sts(
         "AssumeRole",
         params;
@@ -293,6 +299,7 @@ function ec2_instance_credentials(profile::AbstractString)
     )
     role_creds = resp["AssumeRoleResult"]["Credentials"]
     role_user = resp["AssumeRoleResult"]["AssumedRoleUser"]
+
     return AWSCredentials(
         role_creds["AccessKeyId"],
         role_creds["SecretAccessKey"],

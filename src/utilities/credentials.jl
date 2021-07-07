@@ -118,7 +118,11 @@ end
 Check if credentials will expire within 5 minutes
 """
 function _will_expire(aws_creds::AWSCredentials)
-    return aws_creds.expiry - now(UTC) <= Minute(5)
+    expiring = aws_creds.expiry - now(UTC) <= Minute(5)
+
+    println("Will Expire? ", expiring)
+
+    return expiring
 end
 
 
